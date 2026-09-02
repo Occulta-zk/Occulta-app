@@ -1,0 +1,82 @@
+.panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  background: var(--color-bg-raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.statusIcon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.phase {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.timerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.elapsed {
+  font-family: var(--font-mono);
+}
+
+.estimate {
+  font-family: var(--font-mono);
+}
+
+.cancelBtn {
+  margin-top: var(--space-2);
+  align-self: flex-start;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.successRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #1a7a3c;
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+  .successRow {
+    color: #6ee09e;
+  }
+}
+
+.meta {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}

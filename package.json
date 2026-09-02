@@ -1,0 +1,57 @@
+{
+  "name": "occulta-app",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The human surface of Occulta: playground, demo apps, and note manager for zero-knowledge privacy on Stellar testnet.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "a11y": "tsx scripts/axe-scan.ts",
+    "bundle-check": "tsx scripts/bundle-budget.ts",
+    "csp-check": "vitest run test/csp.test.ts",
+    "egress-check": "vitest run test/network-egress.test.ts"
+  },
+  "dependencies": {
+    "@stellar/freighter-api": "6.0.1",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "snarkjs": "0.7.6",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.62.1",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "@typescript-eslint/eslint-plugin": "8.69.0",
+    "@typescript-eslint/parser": "8.69.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.4",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "jsdom": "30.0.1",
+    "prettier": "3.9.6",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}

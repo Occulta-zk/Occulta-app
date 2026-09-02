@@ -1,0 +1,159 @@
+/*
+ * Design tokens and reset.
+ *
+ * Dark/light follow the OS (`prefers-color-scheme`) with no JS toggle in M1 — a manual
+ * toggle can be added later without changing this token contract. Motion respects
+ * `prefers-reduced-motion` everywhere animation appears (build spec §7).
+ *
+ * No inline `style=""` attributes or `<style>` tags are used anywhere in this app on
+ * purpose: it keeps `style-src` in the CSP free of any need for `unsafe-inline`, using
+ * only classes from here and CSS Modules (see SECURITY.md #3). Anything that looks like
+ * it needs a dynamic inline style (a progress percentage, a meter fill) should use a
+ * native element (`<progress>`, `<meter>`) that the browser renders without one.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --color-bg: #ffffff;
+  --color-bg-raised: #f6f7f9;
+  --color-border: #d8dbe2;
+  --color-text: #14161a;
+  --color-text-muted: #565c66;
+  --color-accent: #2a5dd6;
+  --color-accent-text: #ffffff;
+  --color-focus-ring: #2a5dd6;
+
+  --color-warning-bg: #fff4e0;
+  --color-warning-border: #e0a63c;
+  --color-warning-text: #5c4300;
+
+  --color-danger-bg: #fdeaea;
+  --color-danger-border: #d64545;
+  --color-danger-text: #6e1414;
+
+  --color-info-bg: #e7f0ff;
+  --color-info-border: #2a5dd6;
+  --color-info-text: #143172;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+
+  --max-content-width: 72rem;
+
+  --motion-fast: 120ms;
+  --motion-normal: 200ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0f1115;
+    --color-bg-raised: #191c22;
+    --color-border: #2c313a;
+    --color-text: #eef0f4;
+    --color-text-muted: #a3aab6;
+    --color-accent: #6d9bff;
+    --color-accent-text: #08122b;
+    --color-focus-ring: #6d9bff;
+
+    --color-warning-bg: #3a2c05;
+    --color-warning-border: #c98f1f;
+    --color-warning-text: #ffdd99;
+
+    --color-danger-bg: #3a1414;
+    --color-danger-border: #d64545;
+    --color-danger-text: #ffc4c4;
+
+    --color-info-bg: #0f1f45;
+    --color-info-border: #6d9bff;
+    --color-info-text: #cfe0ff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+/* A single, consistent, highly visible focus style everywhere (build spec §7: "visible
+ * focus states"). Never removed with `outline: none` anywhere else in the app. */
+:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+}
+
+.skip-link:focus {
+  left: var(--space-4);
+  top: var(--space-4);
+}

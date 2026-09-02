@@ -1,0 +1,7 @@
+{
+  "$schema": "./schema.json",
+  "network": "testnet",
+  "note": "Mirrored from occulta-sdk/deployments/testnet.json. Nothing deployed yet — `occulta deploy` doesn't exist until the SDK's own M4. Do not hand-edit; this file is synced from the SDK release, not authored here (build spec §2, §12).",
+  "circuits": {},
+  "contracts": {}
+}

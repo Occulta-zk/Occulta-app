@@ -1,0 +1,83 @@
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.values {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.track {
+  height: 16px;
+  background: var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width var(--motion-normal) ease;
+  background: var(--color-accent);
+}
+
+.fill[data-level='warning'] {
+  background: var(--color-warning-border);
+}
+
+.fill[data-level='danger'] {
+  background: var(--color-danger-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendDot[data-color='accent'] {
+  background: var(--color-accent);
+}
+.legendDot[data-color='warning'] {
+  background: var(--color-warning-border);
+}
+.legendDot[data-color='danger'] {
+  background: var(--color-danger-border);
+}
