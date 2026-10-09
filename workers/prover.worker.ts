@@ -8,13 +8,15 @@
  *
  * Message protocol (main thread → worker):
  *   { type: 'prove', circuitName, wasmUrl, zkeyUrl, inputs }
+ *   { type: 'verify', vkeyUrl, proof, publicSignals }
  *   { type: 'cancel' }
  *
  * Message protocol (worker → main thread):
  *   { type: 'downloading', progress, totalBytes }
  *   { type: 'compiling', phase }
  *   { type: 'proving', phase, estimatedMs }
- *   { type: 'done', proof, publicSignals, provingTimeMs }
+ *   { type: 'done', proof, publicSignals, provingTimeMs, totalTimeMs, wasmBytes, zkeyBytes }
+ *   { type: 'verified', diagnosis, verifyTimeMs }
  *   { type: 'error', message }
  *   { type: 'cancelled' }
  *
@@ -27,7 +29,14 @@
  *     the duration of this instantiation to avoid re-downloading per proof.
  *   - `cancel` is handled cooperatively: the worker posts 'cancelled' and terminates
  *     the current operation; the main thread should then terminate the worker.
+ *   - `verify` runs snarkjs's `groth16.verify` — the same call @occulta/core's
+ *     `verifyLocal` makes — through lib/playground.ts's `diagnoseVerification`, so a
+ *     failure comes back as a named cause rather than a bare `false`. It only ever sees
+ *     the proof and public signals, never witness inputs.
  */
+
+import type { SnarkjsProof, SnarkjsVKey } from 'snarkjs';
+import { diagnoseVerification } from '../lib/playground';
 
 // ─── Cancellation token ────────────────────────────────────────────────────────
 
@@ -149,11 +158,49 @@ interface ProveMessage {
   constraintCount?: number;
 }
 
+interface VerifyMessage {
+  type: 'verify';
+  vkeyUrl: string;
+  proof: SnarkjsProof;
+  publicSignals: string[];
+}
+
 interface CancelMessage {
   type: 'cancel';
 }
 
-type WorkerMessage = ProveMessage | CancelMessage;
+type WorkerMessage = ProveMessage | VerifyMessage | CancelMessage;
+
+const vkeyCache = new Map<string, SnarkjsVKey>();
+
+async function handleVerify(msg: VerifyMessage): Promise<void> {
+  try {
+    const snarkjs = await loadSnarkjs();
+    let vkey = vkeyCache.get(msg.vkeyUrl);
+    if (!vkey) {
+      const response = await fetch(msg.vkeyUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch verification key ${msg.vkeyUrl}: HTTP ${response.status}`);
+      }
+      vkey = (await response.json()) as SnarkjsVKey;
+      vkeyCache.set(msg.vkeyUrl, vkey);
+    }
+    const verificationKey = vkey;
+    const startMs = performance.now();
+    const diagnosis = await diagnoseVerification(verificationKey, msg.publicSignals, (signals) =>
+      snarkjs.groth16.verify(verificationKey, signals, msg.proof),
+    );
+    self.postMessage({
+      type: 'verified',
+      diagnosis,
+      verifyTimeMs: Math.round(performance.now() - startMs),
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? sanitiseErrorMessage(err.message) : 'Unknown verifier error';
+    self.postMessage({ type: 'error', message });
+  }
+}
 
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const msg = event.data;
@@ -161,6 +208,11 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   if (msg.type === 'cancel') {
     cancelled = true;
     self.postMessage({ type: 'cancelled' });
+    return;
+  }
+
+  if (msg.type === 'verify') {
+    await handleVerify(msg);
     return;
   }
 
@@ -197,7 +249,9 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       estimatedMs,
     });
 
-    // 5. Generate proof
+    // 5. Generate proof — timed on its own so the number shown is proving cost, not
+    //    proving plus a cold download.
+    const proveStartMs = performance.now();
     // NOTE: private inputs in `msg.inputs` are used here and nowhere else.
     // They are not posted back, not logged, not stored anywhere in this worker.
     const { proof, publicSignals } = await snarkjs.groth16.fullProve(
@@ -207,14 +261,17 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     );
     checkCancelled();
 
-    const provingTimeMs = Math.round(performance.now() - startMs);
+    const endMs = performance.now();
 
     self.postMessage({
       type: 'done',
       // `proof` already carries `protocol: 'groth16'` — snarkjs sets it itself.
       proof,
       publicSignals,
-      provingTimeMs,
+      provingTimeMs: Math.round(endMs - proveStartMs),
+      totalTimeMs: Math.round(endMs - startMs),
+      wasmBytes: wasmBuffer.byteLength,
+      zkeyBytes: zkeyBuffer.byteLength,
     });
   } catch (err) {
     if (err instanceof CancellationError) {

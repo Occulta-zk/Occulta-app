@@ -18,7 +18,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import styles from './ProgressPanel.module.css';
 
 export type ProverPhase =
-  'idle' | 'downloading' | 'compiling' | 'proving' | 'done' | 'error' | 'cancelled';
+  'idle' | 'downloading' | 'compiling' | 'proving' | 'verifying' | 'done' | 'error' | 'cancelled';
 
 export interface ProgressPanelProps {
   phase: ProverPhase;
@@ -50,6 +50,7 @@ const PHASE_LABELS: Record<ProverPhase, string> = {
   downloading: 'Downloading proving artefacts',
   compiling: 'Preparing circuit',
   proving: 'Generating proof',
+  verifying: 'Verifying proof locally',
   done: 'Proof complete',
   error: 'Proof failed',
   cancelled: 'Cancelled',
@@ -60,6 +61,7 @@ const PHASE_ICONS: Record<ProverPhase, string> = {
   downloading: '⬇',
   compiling: '⚙',
   proving: '🔐',
+  verifying: '🔎',
   done: '✅',
   error: '❌',
   cancelled: '⛔',
@@ -81,7 +83,11 @@ export function ProgressPanel({
 
   // Track elapsed time while an active phase is running
   useEffect(() => {
-    const active = phase === 'downloading' || phase === 'compiling' || phase === 'proving';
+    const active =
+      phase === 'downloading' ||
+      phase === 'compiling' ||
+      phase === 'proving' ||
+      phase === 'verifying';
 
     if (active) {
       if (!startRef.current) startRef.current = performance.now();
@@ -112,9 +118,14 @@ export function ProgressPanel({
   if (phase === 'idle') return null;
 
   const showDownloadBar = phase === 'downloading' && downloadProgress > 0;
-  const showIndeterminate = (phase === 'compiling' || phase === 'proving') && !showDownloadBar;
+  const showIndeterminate =
+    (phase === 'compiling' || phase === 'proving' || phase === 'verifying') && !showDownloadBar;
   const showCancel =
-    onCancel && (phase === 'downloading' || phase === 'compiling' || phase === 'proving');
+    onCancel &&
+    (phase === 'downloading' ||
+      phase === 'compiling' ||
+      phase === 'proving' ||
+      phase === 'verifying');
 
   const remainingMs = estimatedMs && elapsedMs < estimatedMs ? estimatedMs - elapsedMs : null;
 
