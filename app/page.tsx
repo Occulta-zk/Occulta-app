@@ -1,16 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import Link from 'next/link';
 import { SiteHeader } from '@/components/ui/SiteHeader';
 import { Banner, Card, LinkButton } from '@/components/ui';
 import { deploymentManifestSchema, hasAnyDeployment } from '@/lib/deployments';
 import styles from './page.module.css';
 
+const REPO = 'https://github.com/Occulta-zk/occulta-app';
+
 /**
- * Reads the deployment manifest straight off disk (this is a Server Component; there is
- * no running server to `fetch()` from during the build) so the landing page never claims
- * a live demo exists when `deployments/testnet.json` says nothing is deployed yet
- * (build spec §2, §12 — "do not hardcode... nothing production-ready").
+ * Reads the deployment manifest straight off disk (this is a Server Component) so the
+ * landing page never claims something is live on testnet when `deployments/testnet.json`
+ * says nothing is deployed yet.
  */
 async function getDeploymentStatus() {
   const filePath = path.join(process.cwd(), 'public', 'deployments', 'testnet.json');
@@ -27,60 +27,56 @@ export default async function LandingPage() {
       <SiteHeader />
       <main id="main-content" className={styles.main}>
         <Banner variant="warning" title="Testnet only — unaudited — not for real assets">
-          Occulta runs exclusively on Stellar testnet. Nothing here has been audited. Nothing here
-          custodies real value. See <Link href="/docs/threat-model">the threat model</Link> before
-          connecting a wallet.
+          Occulta targets Stellar testnet exclusively. Nothing here has been audited and nothing
+          here custodies real value. Read{' '}
+          <a href={`${REPO}/blob/main/docs/THREAT-MODEL.md`} rel="noreferrer">
+            the threat model
+          </a>{' '}
+          before connecting a wallet.
         </Banner>
 
         <section className={styles.hero}>
           <h1>Zero-knowledge privacy for Stellar, in the open.</h1>
           <p className={styles.lede}>
-            A playground to compile a circuit, prove it in your browser, and verify it on-chain —
-            plus working demos (private voting, anonymous claims, KYC attestation, confidential
-            payroll) built on the same primitives you can reuse.
+            The browser side of Occulta: a prover that runs in a Web Worker, an encrypted on-device
+            vault, a wallet adapter, and indexer and relayer clients that never see a secret. Try
+            the playground to generate and check a real Groth16 proof in your browser.
           </p>
-
-          {isLive ? (
-            <div className={styles.actions}>
-              <LinkButton href="/playground">Open the playground</LinkButton>
-            </div>
-          ) : (
+          <div className={styles.actions}>
+            <LinkButton href="/playground">Open the playground</LinkButton>
+          </div>
+          {!isLive && (
             <Banner variant="info">
-              <strong>Nothing is deployed to testnet yet.</strong> The circuits and contracts this
-              playground needs ({Object.keys(manifest.contracts).length} contracts,{' '}
-              {Object.keys(manifest.circuits).length} circuits registered) haven&apos;t landed from{' '}
-              <code>occulta-sdk</code> / <code>occulta-smartcontract</code> yet — this page will
-              switch to live demo links the moment <code>deployments/testnet.json</code> lists one.
-              Track progress in{' '}
-              <a href="https://github.com" rel="noreferrer">
-                the project repos
-              </a>
-              .
+              <strong>Nothing is deployed to testnet yet.</strong>{' '}
+              <code>deployments/testnet.json</code> lists {Object.keys(manifest.contracts).length}{' '}
+              contracts and {Object.keys(manifest.circuits).length} circuits, so on-chain
+              verification is not available. The playground proves and verifies locally and says
+              plainly which steps are still blocked.
             </Banner>
           )}
         </section>
 
-        <section className={styles.grid} aria-label="What this project is">
+        <section className={styles.grid} aria-label="What exists today">
           <Card>
             <h2>Playground</h2>
             <p>
-              Paste or upload a Circom circuit, compile it to wasm, prove it with a worker (never
-              the main thread), and verify the proof on-chain — with a live budget meter against the
-              testnet instruction limit.
+              Prove a statement in a Web Worker, verify it locally, and get a named reason when
+              verification fails. Shows proving time, constraint count, and artefact size.
             </p>
           </Card>
           <Card>
-            <h2>Demos</h2>
+            <h2>Privacy foundation</h2>
             <p>
-              Four complete flows, not mockups: private vote, anonymous allowlist claim, KYC
-              attestation, and confidential payroll (ShieldRoll).
+              AES-256-GCM encrypted IndexedDB storage, per-request CSP nonces, a Freighter adapter
+              that never asks for a seed, and a CI test that fails if secret-handling code talks to
+              an unexpected origin.
             </p>
           </Card>
           <Card>
-            <h2>Note manager</h2>
+            <h2>Planned</h2>
             <p>
-              Create or import a mnemonic, back it up before you ever deposit, and rescan an indexer
-              to recover your notes. Secrets never leave your device.
+              Demo apps (private vote, anonymous claim, attestation, payroll) and a note manager.
+              They depend on contracts and circuits that haven&apos;t shipped upstream yet.
             </p>
           </Card>
         </section>

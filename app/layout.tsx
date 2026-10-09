@@ -6,7 +6,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Occulta — privacy on Stellar (testnet)',
   description:
-    'Playground and demo apps for zero-knowledge privacy on Stellar testnet. Unaudited, testnet only, not for real assets.',
+    'A browser playground and privacy-app foundation for zero-knowledge proofs on Stellar testnet. Unaudited, testnet only, not for real assets.',
 };
 
 export const viewport: Viewport = {

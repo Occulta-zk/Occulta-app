@@ -1,12 +1,10 @@
 import Link from 'next/link';
 import styles from './SiteHeader.module.css';
 
-const NAV_LINKS = [
-  { href: '/playground', label: 'Playground' },
-  { href: '/demos/vote', label: 'Demos' },
-  { href: '/notes', label: 'Notes' },
-  { href: '/docs', label: 'Docs' },
-];
+// Only routes that exist. Add a link when its page ships, not before.
+const NAV_LINKS = [{ href: '/playground', label: 'Playground' }];
+
+const SOURCE_URL = 'https://github.com/Occulta-zk/occulta-app';
 
 export function SiteHeader() {
   return (
@@ -21,6 +19,9 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <a href={SOURCE_URL} rel="noreferrer">
+            Source
+          </a>
         </nav>
       </div>
     </header>
