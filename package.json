@@ -26,7 +26,9 @@
     "bundle-check": "tsx scripts/bundle-budget.ts",
     "csp-check": "vitest run test/csp.test.ts",
     "egress-check": "vitest run test/network-egress.test.ts",
-    "fixture:playground": "tsx scripts/gen-playground-fixture.ts"
+    "fixture:playground": "tsx scripts/gen-playground-fixture.ts",
+    "deployments:sync": "tsx scripts/sync-deployments.ts",
+    "deployments:check": "tsx scripts/sync-deployments.ts --check"
   },
   "dependencies": {
     "@stellar/freighter-api": "6.0.1",
