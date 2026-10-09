@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { headers } from 'next/headers';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,7 +15,11 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // A per-request CSP nonce can't be baked into a page prerendered at build time, so every
+  // route renders per request. Reading the request headers is what opts the tree into that.
+  await headers();
+
   return (
     <html lang="en">
       <body>
