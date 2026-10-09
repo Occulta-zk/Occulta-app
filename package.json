@@ -2,7 +2,7 @@
   "name": "occulta-app",
   "private": true,
   "version": "0.0.0",
-  "description": "The human surface of Occulta: playground, demo apps, and note manager for zero-knowledge privacy on Stellar testnet.",
+  "description": "The browser side of Occulta: a proving playground and privacy-app foundation for zero-knowledge proofs on Stellar testnet.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {

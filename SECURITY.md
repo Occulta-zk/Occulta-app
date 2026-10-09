@@ -42,9 +42,12 @@ we take reports seriously and will credit reporters who ask to be credited.
 
 ## Current status
 
-This app is early — see the milestones in the README. Most of the surfaces described in
-the build spec (playground proving, on-chain verification, the demos) are not live yet
-because the SDK and contracts they depend on
-(`@occulta/core`'s `Note`/`NoteStore`/`prove`/`verifyLocal`/`submit`, and any deployed
-contract) have not landed. Nothing in this app fabricates those APIs ahead of time —
-see `lib/occulta.ts` for what is and isn't wired up yet.
+See the README's [Status](README.md#status) table. The playground proves and verifies locally
+against a **development-fixture circuit whose trusted setup is single-party and throwaway** —
+anyone holding that setup's toxic waste could forge proofs for it, which is acceptable only
+because the circuit guards nothing. It must never be registered on-chain or reused.
+
+On-chain verification, the demos, and the note manager are not live: they depend on
+`@occulta/core` being installable and on contracts being deployed, and neither has happened.
+Nothing in this app fabricates those APIs ahead of time — see `lib/occulta.ts` for what is
+and isn't wired up.

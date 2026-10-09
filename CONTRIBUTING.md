@@ -52,9 +52,16 @@ indexer/relayer/RPC). These are blocking, not advisory.
 
 ## Good first issues
 
-Accessibility fixes, new `components/ui` primitives, demo documentation (explaining a
-circuit's public signals in plain language), and Playwright test coverage are typically
-tagged `good-first-issue` and don't require touching anything cryptographic.
+None of these touch anything cryptographic:
+
+- **Playground:** a mobile layout pass; copying public signals to the clipboard; a
+  "what are public signals?" explainer; announcing elapsed proving time to screen readers at
+  sensible intervals.
+- **Failure messages:** clearer wording for any diagnosis in `lib/playground.ts`, with a test.
+- **Accessibility:** anything `pnpm a11y` or a manual screen-reader pass turns up.
+- **Tests:** Playwright coverage for cancel-mid-proof and for invalid input handling.
+
+Issues like these are tagged `good-first-issue`.
 
 ## Code of conduct
 
