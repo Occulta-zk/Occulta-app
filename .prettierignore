@@ -5,3 +5,5 @@ playwright-report/
 test-results/
 pnpm-lock.yaml
 public/deployments/*.json
+# Generated, hash-pinned artefacts — see scripts/gen-playground-fixture.ts
+public/fixtures/

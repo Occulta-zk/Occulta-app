@@ -1,0 +1,2 @@
+# Fixture artefacts are pinned by SHA-256 in their manifest; never convert line endings.
+public/fixtures/** -text

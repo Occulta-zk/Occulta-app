@@ -25,7 +25,8 @@
     "a11y": "tsx scripts/axe-scan.ts",
     "bundle-check": "tsx scripts/bundle-budget.ts",
     "csp-check": "vitest run test/csp.test.ts",
-    "egress-check": "vitest run test/network-egress.test.ts"
+    "egress-check": "vitest run test/network-egress.test.ts",
+    "fixture:playground": "tsx scripts/gen-playground-fixture.ts"
   },
   "dependencies": {
     "@stellar/freighter-api": "6.0.1",
