@@ -16,7 +16,11 @@
  * function below is typed against that file's mirror of the real, verified SDK surface
  * (occulta-sdk@7e32138, verified 2026-09-02) and will fail loudly at runtime, not silently,
  * until the dependency lands: `loadCore()` throws with instructions rather than returning a
- * stub. The app builds and is navigable; only proving and note-management flows are blocked.
+ * stub. Caveat, verified against the Next 16.3.4 Turbopack build: the bundler refuses the
+ * unresolvable `import('@occulta/core')` below, so `next build` FAILS if any route imports
+ * this file — directly, or via lib/indexer.ts or the components/proving barrel (through
+ * AnonymitySetBadge). Today no route does; app/playground imports ProgressPanel directly for
+ * that reason. Tests resolve the specifier to test/stubs/occulta-core.ts instead.
  *
  * NEVER import circomlibjs, ffjavascript, snarkjs, or any ZK/crypto library directly in this
  * file or anywhere else in occulta-app outside workers/prover.worker.ts (which calls snarkjs

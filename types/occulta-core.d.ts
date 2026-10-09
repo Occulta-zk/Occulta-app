@@ -5,8 +5,8 @@
  * gitignored, so there is no dependency spec — npm, pnpm git+path, or otherwise — that
  * currently resolves it; see README.md Status). Runtime access always goes through
  * `lib/occulta.ts`'s `loadCore()`, which dynamically imports the bare specifier below and
- * throws a clear, actionable error if it can't be resolved — the app builds and is
- * navigable; only proving and note-management flows are blocked until the dependency lands.
+ * throws a clear, actionable error if it can't be resolved. Note that `next build` fails if
+ * any route imports lib/occulta.ts while the package is missing — see that file's header.
  *
  * This declaration exists so `lib/occulta.ts` can be typed against the REAL SDK surface
  * instead of an invented one (build spec §0 rule 2: "Never invent an API"). It is a mirror,
