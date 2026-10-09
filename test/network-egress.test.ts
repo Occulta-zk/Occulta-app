@@ -11,6 +11,23 @@
  * These run in the `egress-check` CI step and block merge on failure.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import type { MerkleProof as IndexerMerkleProof } from '@/lib/indexer';
+
+// @occulta/core isn't installable yet (see lib/occulta.ts), so its Poseidon is replaced with a
+// non-commutative toy hash for the Merkle tests; snarkjs is replaced so the worker egress test
+// runs in milliseconds and needs no real artefacts (test/playground.test.ts proves for real).
+const { toyHash } = vi.hoisted(() => ({
+  toyHash: ([x, y]: readonly bigint[]) => (x! * 7n + y! * 13n + 1n) % 1_000_000_007n,
+}));
+vi.mock('@occulta/core', () => ({ buildOccultaPoseidon: async () => ({ hash: toyHash }) }));
+vi.mock('snarkjs', () => ({
+  groth16: {
+    fullProve: async () => ({ proof: { protocol: 'groth16' }, publicSignals: ['1', '42'] }),
+    verify: async () => true,
+  },
+}));
 
 // ─── Fetch interception ──────────────────────────────────────────────────────
 
@@ -107,63 +124,167 @@ describe('Network egress invariants', () => {
 
 // ─── Merkle path verification ──────────────────────────────────────────────────
 
-describe('Merkle path verification', () => {
+describe('Merkle path verification (lib/indexer.ts → lib/occulta.ts)', () => {
   /**
-   * Simulates the check that lib/indexer.ts must perform: recompute the Merkle root
-   * from the returned path and compare it against the on-chain root. If they disagree,
-   * the path must be rejected — this is the primary defence against a malicious indexer
-   * (build spec §4.5).
-   *
-   * The actual Poseidon/Merkle logic will live in @occulta/core once integrated (M3).
-   * Here we test the *structural contract* that the verification step must reject
-   * tampered paths.
+   * Exercises the real `verifyMerklePathLocally` and `recomputeMerkleRoot`. Only the hash is
+   * stood in for: `@occulta/core` isn't installable yet, so `buildOccultaPoseidon` is mocked
+   * with a deliberately non-commutative toy so a left/right mix-up changes the root. What's
+   * under test is the level-by-level walk and — the security property — that the path is
+   * checked against the chain's root, never the root the indexer claims.
    */
 
-  // Minimal stub types — replaced by @occulta/core types in M3
-  interface MerkleProof {
-    leaf: string;
-    pathElements: string[];
-    pathIndices: number[];
-    root: string;
-  }
+  const leaf = 5n;
+  const siblings = [11n, 22n];
+  const indices = [0, 1];
+  // Level 0: leaf is the left child → H(leaf, s0). Level 1: right child → H(s1, node).
+  const trueRoot = toyHash([22n, toyHash([leaf, 11n])]);
 
-  function computeRoot(proof: MerkleProof): string {
-    // Stub: in a real implementation this calls poseidon2 on each level.
-    // For now, return the root claimed in the proof so *valid* paths pass;
-    // a tampered-path test overrides by mutating pathElements.
-    return proof.root;
-  }
-
-  function verifyMerklePath(proof: MerkleProof, trustedRoot: string): boolean {
-    const computedRoot = computeRoot(proof);
-    return computedRoot === trustedRoot;
-  }
-
-  const validProof: MerkleProof = {
-    leaf: '0xabc123',
-    pathElements: ['0xdeadbeef', '0xcafebabe'],
-    pathIndices: [0, 1],
-    root: '0xtrustworthy',
-  };
-
-  it('accepts a path whose computed root matches the trusted root', () => {
-    expect(verifyMerklePath(validProof, '0xtrustworthy')).toBe(true);
+  const proofFor = (overrides: Partial<IndexerMerkleProof> = {}): IndexerMerkleProof => ({
+    leaf: leaf.toString(),
+    pathElements: siblings.map(String),
+    pathIndices: indices,
+    root: trueRoot.toString(),
+    blockNumber: 1,
+    ...overrides,
   });
 
-  it('rejects a path whose root does not match the trusted root (tampered indexer)', () => {
-    const tampered: MerkleProof = {
-      ...validProof,
-      pathElements: ['0xattackerelement', '0xcafebabe'], // mutated
-      root: '0xfakeroot', // claimed root doesn't match chain's trusted root
+  it('recomputes the root level by level, honouring left/right', async () => {
+    const { recomputeMerkleRoot } = await import('@/lib/occulta');
+    expect(await recomputeMerkleRoot(leaf, siblings, indices)).toBe(trueRoot);
+    expect(await recomputeMerkleRoot(leaf, siblings, [1, 0])).not.toBe(trueRoot);
+  });
+
+  it('accepts a path that hashes to the trusted on-chain root', async () => {
+    const { verifyMerklePathLocally } = await import('@/lib/indexer');
+    await expect(verifyMerklePathLocally(proofFor(), trueRoot.toString())).resolves.toMatchObject({
+      verified: true,
+    });
+  });
+
+  it('rejects a tampered sibling even when the indexer claims the right root', async () => {
+    const { verifyMerklePathLocally } = await import('@/lib/indexer');
+    const tampered = proofFor({ pathElements: ['999', '22'] }); // root field still "correct"
+    await expect(verifyMerklePathLocally(tampered, trueRoot.toString())).rejects.toThrow(
+      /Refusing to prove/,
+    );
+  });
+
+  it('ignores the root the indexer claims and trusts only the chain', async () => {
+    const { verifyMerklePathLocally } = await import('@/lib/indexer');
+    // A consistent forged path + matching forged root claim: still rejected, because it
+    // doesn't hash to what the chain holds.
+    const forgedSiblings = ['1', '2'];
+    const forgedRoot = toyHash([2n, toyHash([leaf, 1n])]).toString();
+    const forged = proofFor({ pathElements: forgedSiblings, root: forgedRoot });
+    await expect(verifyMerklePathLocally(forged, trueRoot.toString())).rejects.toThrow(
+      /Merkle root mismatch/,
+    );
+  });
+
+  it('rejects malformed paths before hashing anything', async () => {
+    const { verifyMerklePathLocally } = await import('@/lib/indexer');
+    await expect(
+      verifyMerklePathLocally(proofFor({ pathIndices: [0] }), trueRoot.toString()),
+    ).rejects.toThrow(/length mismatch/);
+    await expect(
+      verifyMerklePathLocally(proofFor({ pathIndices: [0, 2] }), trueRoot.toString()),
+    ).rejects.toThrow(/Invalid path index/);
+  });
+});
+
+// ─── Playground route (app/playground + workers/prover.worker.ts) ──────────────
+
+describe('Playground egress', () => {
+  const root = path.resolve(__dirname, '..');
+
+  it('the fixture manifest only names same-origin artefacts', async () => {
+    const { fixtureManifestSchema } = await import('@/lib/playground');
+    const manifest = fixtureManifestSchema.parse(
+      JSON.parse(
+        await readFile(
+          path.join(root, 'public/fixtures/playground/poseidon_preimage.json'),
+          'utf8',
+        ),
+      ),
+    );
+    for (const artefact of Object.values(manifest.artefacts)) {
+      expect(artefact.path.startsWith('/') && !artefact.path.startsWith('//')).toBe(true);
+    }
+  });
+
+  it('the prover worker fetches only same-origin artefacts and never echoes private inputs', async () => {
+    const SECRET_A = '987654321987654321987654321';
+    const SECRET_B = '123456789123456789123456789';
+    const fetched: string[] = [];
+    const posted: unknown[] = [];
+
+    const originalFetch = global.fetch;
+    const originalPost = self.postMessage;
+    global.fetch = async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      fetched.push(url);
+      const body = url.endsWith('.json') ? JSON.stringify({ nPublic: 2 }) : 'binary';
+      return new Response(body, { status: 200 });
     };
-    // The trusted root the chain actually holds is '0xtrustworthy'; the tampered proof
-    // claims '0xfakeroot' — must be rejected.
-    expect(verifyMerklePath(tampered, '0xtrustworthy')).toBe(false);
+    self.postMessage = ((msg: unknown) => posted.push(msg)) as typeof self.postMessage;
+
+    try {
+      await import('@/workers/prover.worker');
+      const handler = self.onmessage as (e: { data: unknown }) => Promise<void>;
+      await handler({
+        data: {
+          type: 'prove',
+          circuitName: 'poseidon_preimage',
+          wasmUrl: '/fixtures/playground/poseidon_preimage.wasm',
+          zkeyUrl: '/fixtures/playground/poseidon_preimage.zkey',
+          inputs: { a: SECRET_A, b: SECRET_B, scope: '42' },
+        },
+      });
+      await handler({
+        data: {
+          type: 'verify',
+          vkeyUrl: '/fixtures/playground/poseidon_preimage.vkey.json',
+          proof: {},
+          publicSignals: ['1', '42'],
+        },
+      });
+    } finally {
+      global.fetch = originalFetch;
+      self.postMessage = originalPost;
+    }
+
+    expect(fetched.length).toBeGreaterThanOrEqual(3);
+    for (const url of fetched) expect(isAllowedOrigin(url)).toBe(true);
+    for (const url of fetched) expect(url.startsWith('/')).toBe(true);
+
+    const types = posted.map((m) => (m as { type: string }).type);
+    expect(types).toContain('done');
+    expect(types).toContain('verified');
+    const wire = JSON.stringify(posted);
+    expect(wire).not.toContain(SECRET_A);
+    expect(wire).not.toContain(SECRET_B);
   });
 
-  it('rejects a path where root field itself is tampered', () => {
-    const tampered: MerkleProof = { ...validProof, root: '0xmalliciousroot' };
-    expect(verifyMerklePath(tampered, '0xtrustworthy')).toBe(false);
+  it('playground source hardcodes no request to a third-party origin', async () => {
+    // A link a person clicks is not egress; a fetch/import/script/worker URL is. The only
+    // absolute URL allowed is the "Read the circuit source" link to this repo.
+    const ALLOWED_LINKS = new Set([
+      'https://github.com/Occulta-zk/occulta-app/blob/main/fixtures/playground/poseidon_preimage.circom',
+    ]);
+    const files = [
+      'app/playground/page.tsx',
+      'app/playground/Playground.tsx',
+      'workers/prover.worker.ts',
+      'lib/playground.ts',
+      'lib/deployments.ts',
+    ];
+    for (const file of files) {
+      const source = await readFile(path.join(root, file), 'utf8');
+      for (const [url] of source.matchAll(/https?:\/\/[^\s'"`)]+/g)) {
+        expect(ALLOWED_LINKS.has(url), `${file} references ${url}`).toBe(true);
+      }
+      expect(source, `${file} must not use analytics/beacons`).not.toMatch(/sendBeacon|gtag\(/);
+    }
   });
 });
 

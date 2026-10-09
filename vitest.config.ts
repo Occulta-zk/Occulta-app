@@ -15,6 +15,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
+      // Not installable yet — see test/stubs/occulta-core.ts. Tests only; the app build
+      // still resolves (and fails on) the real package.
+      '@occulta/core': path.resolve(__dirname, 'test/stubs/occulta-core.ts'),
     },
   },
 });
