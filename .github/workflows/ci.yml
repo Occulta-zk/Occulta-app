@@ -69,7 +69,7 @@ jobs:
         run: pnpm bundle-check
 
   a11y:
-    name: Accessibility (axe)
+    name: Accessibility (axe) + playground E2E
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -81,5 +81,10 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # Each job runs on a fresh runner: `needs: build` orders the jobs but does not share
+      # .next/, so this job builds for itself before starting the server.
+      - run: pnpm build
       - name: Axe accessibility scan
         run: pnpm a11y
+      - name: Playground E2E (one click → real proof → verified locally)
+        run: pnpm test:e2e

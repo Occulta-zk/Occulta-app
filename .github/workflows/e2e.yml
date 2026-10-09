@@ -1,4 +1,4 @@
-name: E2E (nightly — testnet)
+name: E2E (nightly)
 
 on:
   schedule:
@@ -8,14 +8,9 @@ on:
 
 jobs:
   e2e:
-    name: Playwright — testnet
+    name: Playwright
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      NEXT_PUBLIC_STELLAR_NETWORK: testnet
-      NEXT_PUBLIC_STELLAR_RPC_URL: ${{ secrets.TESTNET_RPC_URL }}
-      NEXT_PUBLIC_INDEXER_URL: ${{ secrets.TESTNET_INDEXER_URL }}
-      NEXT_PUBLIC_RELAYER_URL: ${{ secrets.TESTNET_RELAYER_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

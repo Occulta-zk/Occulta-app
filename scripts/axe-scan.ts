@@ -21,17 +21,8 @@ const root = path.resolve(__dirname, '..');
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:3000';
 
-// Pages to scan — expand as routes are added
-const PAGES_TO_SCAN = [
-  '/',
-  '/playground',
-  '/demos/vote',
-  '/demos/claim',
-  '/demos/attestation',
-  '/demos/payroll',
-  '/notes',
-  '/docs',
-];
+// Pages to scan — only routes that exist. Add a route here in the PR that creates it.
+const PAGES_TO_SCAN = ['/', '/playground'];
 
 // Axe rule tags: 'wcag2a', 'wcag2aa', 'wcag21aa', 'best-practice'
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21aa'];
